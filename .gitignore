@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.idea/
+.vscode/
+
+data/
+
+tmp_bindings.json
+
+.DS_Store
+*.swp
+*~
+*.bak

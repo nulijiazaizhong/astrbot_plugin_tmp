@@ -1,0 +1,63 @@
+name: astrbot_plugin_tmp_bot
+display_name: TMP 查询 Bot (欧卡2)
+version: 2.0.0
+author: BGYdook, 晚安（Goodnight_An）
+description: |
+  欧洲卡车模拟 2 / 美国卡车模拟 TruckersMP(TMP) 查询机器人。
+  重构后基于模块化分层结构 (core/api、core/services、core/commands、core/utils)，
+  支持玩家信息、实时位置、服务器实时路况、里程排行榜、地图 DLC、足迹、历史车队等查询。
+homepage: https://github.com/BGYdook/astrbot-plugin-tmp-bot
+repo: https://github.com/BGYdook/astrbot-plugin-tmp-bot
+license: MIT
+main: main.py
+python_requires: ">=3.10"
+
+# AstrBot 会在插件市场等位置展示以下关键词
+keywords:
+  - chatbot
+  - plugin
+  - truckersmp
+  - gametool
+  - ets2
+  - ats
+  - tmp
+  - astrbot
+  - 欧洲卡车模拟2
+  - 游戏查询
+  - 排行榜
+
+# 数据来源说明
+data_source:
+  api: TruckersMP 官方 API
+  docs: https://truckersmp.com/developers/api
+  third_party:
+    - name: Trucky App
+      url: https://truckyapp.com/
+    - name: da.vtcm.link 公开数据接口（里程/DLC/足迹/历史车队）
+      url: https://da.vtcm.link/
+
+# 使用说明（AstrBot 会在 /help 之类的位置展示）
+usage: |
+  本插件为欧洲卡车模拟 2 / 美国卡车模拟 TruckersMP 玩家查询机器人。
+  在 AstrBot 中向机器人发送对应指令即可使用，例如：
+    - 绑定 123456       绑定 TMP ID
+    - 查询 123456       查询玩家信息
+    - 定位 123456       查询玩家位置并渲染底图
+    - 路况 s1           查看 Simulation 1 的热门实时路况
+    - 服务器            查看官方服务器状态
+    - 总里程排行        查看总里程排行榜
+    - 今日里程排行      查看今日里程排行榜
+    - 足迹              查看个人今日轨迹
+    - DLC列表           列出地图相关 DLC
+    - 历史车队          查询玩家的历史车队记录
+
+# 支持的特性
+features:
+  - 玩家基本信息 / 封禁记录查询
+  - 玩家位置信息查询（底图渲染）
+  - 服务器热门地点实时路况查询
+  - 欧卡/美卡官方服务器状态查询
+  - 总里程 / 今日里程排行榜
+  - 地图 DLC 列表查询（图片输出可选）
+  - 历史车队列表查询
+  - TMP ID 绑定（QQ/平台用户 -> TMP ID）
