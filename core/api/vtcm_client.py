@@ -1,4 +1,4 @@
-"""da.vtcm.link 公开数据 API 客户端。
+"""vtcm 公开数据 API 客户端。
 
 本客户端**不再**承担任何车队平台管理职能（活动列表、成员 CRUD、加减积分、改密码等），
 仅保留以下无 Token 的公开端：
@@ -9,7 +9,20 @@
     - 历史车队 (vtc/history)
     - 官方服务器列表 / 插件版本（直接对接 api.truckersmp.com）
 
+> VTCM 官方已**不再提供**公开数据接口（``da.vtcm.link`` 不再可用）。如需里程
+> / DLC / 足迹 / 历史车队 等数据，请自行部署以下任一开源项目：
+>
+>     - https://github.com/Srlily/TMP-API
+>     - https://github.com/79887143/evm-data-api
+>
+> 部署完成后，把域名 / 反代地址填到 WebUI 配置项 ``vtcm_base_url`` /
+> ``vtcm_open_url`` 中即可；留空时本客户端会直接抛出
+> ``ServiceUnavailableException``，相关命令在 UI 上提示"未配置数据源"。
+
 原 ``open.vtcm.link`` 上需要 Token 的接口在本版本中**已删除**。
+
+``base_url`` / ``open_url`` 默认均为空字符串（表示"未启用"），可通过构造函数
+或 WebUI 配置项覆盖为自建数据源地址。
 """
 
 from __future__ import annotations
@@ -22,6 +35,7 @@ import aiohttp
 from ..utils.exceptions import (
     ApiResponseException,
     NetworkException,
+    ServiceUnavailableException,
 )
 from .http_session import HttpSessionManager
 
@@ -62,18 +76,55 @@ def _to_int_rank(val: Any) -> Optional[int]:
 
 
 class VtcmClient:
-    """da.vtcm.link 公开数据 API 客户端。"""
+    """vtcm 公开数据 API 客户端。
 
-    BASE_URL = "https://da.vtcm.link"
-    OPEN_URL = "https://open.vtcm.link"
+    ``base_url`` / ``open_url`` 默认均为空（未配置）；调用任何具体方法时
+    若基址仍为空，将抛出 :class:`ServiceUnavailableException`，由上层
+    翻译为"未配置数据源"提示。需要使用时请在 WebUI 中填写
+    ``vtcm_base_url`` / ``vtcm_open_url``（参见 README 中的自建项目）。
+    """
 
-    def __init__(self, http: HttpSessionManager) -> None:
+    DEFAULT_BASE_URL = ""
+    DEFAULT_OPEN_URL = ""
+
+    def __init__(
+        self,
+        http: HttpSessionManager,
+        base_url: Optional[str] = None,
+        open_url: Optional[str] = None,
+    ) -> None:
         self._http = http
         # 注：本类已不依赖 Token；保留字段以兼容旧初始化路径。
         self._api_token = ""
+        self._base_url = (base_url or self.DEFAULT_BASE_URL).strip().rstrip("/")
+        self._open_url = (open_url or self.DEFAULT_OPEN_URL).strip().rstrip("/")
+
+    @property
+    def base_url(self) -> str:
+        """当前使用的 vtcm 公开数据 API 根地址。未配置时为空字符串。"""
+        return self._base_url
+
+    @property
+    def open_url(self) -> str:
+        """当前使用的 vtcm 开放 API 根地址。未配置时为空字符串。"""
+        return self._open_url
+
+    @property
+    def enabled(self) -> bool:
+        """当 ``base_url`` 与 ``open_url`` 均为空时返回 False。"""
+        return bool(self._base_url or self._open_url)
+
+    def _require_base(self) -> None:
+        """若未配置 ``base_url``，抛出 :class:`ServiceUnavailableException`。"""
+        if not self._base_url:
+            raise ServiceUnavailableException(
+                "vtcm 公开数据接口未配置：请在插件配置中填写 vtcm_base_url，"
+                "或自行部署 https://github.com/Srlily/TMP-API 或 "
+                "https://github.com/79887143/evm-data-api 后填入其域名。"
+            )
 
     # ------------------------------------------------------------------ #
-    # 通用 GET 包装（da.vtcm.link，SSL 关闭）
+    # 通用 GET 包装（自建 vtcm 数据源，默认 SSL 关闭以兼容原 da.vtcm.link 行为）
     # ------------------------------------------------------------------ #
     async def _get_json(
         self,
@@ -103,22 +154,23 @@ class VtcmClient:
             ) as resp:
                 if resp.status != 200:
                     raise ApiResponseException(
-                        f"da.vtcm.link 返回非 200: status={resp.status}"
+                        f"{self._base_url} 返回非 200: status={resp.status}"
                     )
                 return await resp.json()
         except (NetworkException, ApiResponseException):
             raise
         except aiohttp.ClientError as exc:
-            raise NetworkException(f"da.vtcm.link 网络异常: {exc}") from exc
+            raise NetworkException(f"{self._base_url} 网络异常: {exc}") from exc
         except asyncio.TimeoutError as exc:
-            raise NetworkException("da.vtcm.link 请求超时") from exc
+            raise NetworkException(f"{self._base_url} 请求超时") from exc
 
     # ------------------------------------------------------------------ #
     # 玩家里程 (里程 / 排名)
     # ------------------------------------------------------------------ #
     async def get_player_stats(self, tmp_id: str) -> Dict[str, Any]:
         """获取玩家总里程 / 今日里程 / 头像 / 排名等数据。"""
-        url = f"{self.BASE_URL}/player/info"
+        self._require_base()
+        url = f"{self._base_url}/player/info"
         data = await self._get_json(url, params={"tmpId": tmp_id})
         resp_data = data.get("data") or {}
         return {
@@ -155,8 +207,9 @@ class VtcmClient:
         self, ranking_type: str = "total", limit: int = 10
     ) -> List[Dict[str, Any]]:
         """获取总里程 / 今日里程排行榜。"""
+        self._require_base()
         type_code = 2 if str(ranking_type).lower() in ("today", "daily", "2") else 1
-        url = f"{self.BASE_URL}/statistics/mileageRankingList"
+        url = f"{self._base_url}/statistics/mileageRankingList"
         data = await self._get_json(
             url,
             params={"rankingType": type_code, "rankingCount": limit},
@@ -168,7 +221,8 @@ class VtcmClient:
     # DLC
     # ------------------------------------------------------------------ #
     async def get_dlc_list(self, dlc_type: int = 1) -> List[Dict[str, Any]]:
-        url = f"{self.BASE_URL}/dlc/list"
+        self._require_base()
+        url = f"{self._base_url}/dlc/list"
         data = await self._get_json(url, params={"type": dlc_type})
         items = data.get("data")
         return items if isinstance(items, list) else []
@@ -183,6 +237,7 @@ class VtcmClient:
         end_time: str,
         server_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
+        self._require_base()
         params: Dict[str, Any] = {
             "tmpId": str(tmp_id).strip(),
             "startTime": str(start_time).strip(),
@@ -190,7 +245,7 @@ class VtcmClient:
         }
         if server_id:
             params["serverId"] = str(server_id)
-        url = f"{self.BASE_URL}/map/playerHistory"
+        url = f"{self._base_url}/map/playerHistory"
         data = await self._get_json(url, params=params)
         items = data.get("data")
         return items if isinstance(items, list) else []
@@ -206,7 +261,8 @@ class VtcmClient:
         b_axis_x: float,
         b_axis_y: float,
     ) -> List[Dict[str, Any]]:
-        url = f"{self.BASE_URL}/map/playerList"
+        self._require_base()
+        url = f"{self._base_url}/map/playerList"
         params = {
             "aAxisX": a_axis_x,
             "aAxisY": a_axis_y,
@@ -226,7 +282,8 @@ class VtcmClient:
     # ------------------------------------------------------------------ #
     async def get_vtc_history(self, tmp_id: str) -> List[Dict[str, Any]]:
         """读取玩家的历史车队列表。"""
-        url = f"{self.BASE_URL}/vtc/history"
+        self._require_base()
+        url = f"{self._base_url}/vtc/history"
         data = await self._get_json(url, params={"tmpId": tmp_id})
         items = data.get("data")
         return items if isinstance(items, list) else []

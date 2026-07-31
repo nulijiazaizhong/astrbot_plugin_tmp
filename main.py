@@ -72,7 +72,11 @@ class TmpBotPlugin(Star):
         # API 客户端
         self.tmp_client = TmpClient(self.http)
         self.trucky_client = TruckyClient(self.http)
-        self.vtcm_client = VtcmClient(self.http)
+        self.vtcm_client = VtcmClient(
+            self.http,
+            base_url=cfg.get_str("vtcm_base_url", ""),
+            open_url=cfg.get_str("vtcm_open_url", ""),
+        )
         self.ets2map_client = Ets2MapClient(
             self.http,
             interval_seconds=cfg.get_int("ets2map_fullmap_interval_seconds", 60),

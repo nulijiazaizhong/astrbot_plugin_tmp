@@ -55,6 +55,7 @@ from ..utils.exceptions import (
     ApiResponseException,
     NetworkException,
     PlayerNotFoundException,
+    ServiceUnavailableException,
     SteamIdNotFoundException,
 )
 from ..utils.time_utils import (
@@ -113,6 +114,15 @@ def _combined_location(country_cn: str, city_cn: str) -> str:
     return dcity or dc or "未知位置"
 
 
+# 当 VTCM 公开数据源未配置时返回给用户的统一提示
+_VTCM_NOT_CONFIGURED_MSG = (
+    "VTCM 公开数据接口未配置。\n"
+    "请在 AstrBot WebUI → 插件配置 中填写 vtcm_base_url，"
+    "或自行部署 https://github.com/Srlily/TMP-API "
+    "/ https://github.com/79887143/evm-data-api 后填入其域名。"
+)
+
+
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
@@ -168,6 +178,10 @@ class CommandRegistry:
     @property
     def vtcm(self) -> VtcmClient:
         return self.ctx.vtcm_client
+
+    def _yield_vtcm_not_configured(self, event) -> AsyncGenerator[Any, None]:
+        """统一返回「未配置数据源」提示。"""
+        yield event.plain_result(_VTCM_NOT_CONFIGURED_MSG)
 
     @property
     def fullmap(self) -> Ets2MapClient:
@@ -463,6 +477,10 @@ class CommandRegistry:
     # DLC
     # ====================================================================== #
     async def cmd_dlc_list(self, event) -> AsyncGenerator[Any, None]:
+        if not self.vtcm.enabled:
+            async for r in self._yield_vtcm_not_configured(event):
+                yield r
+            return
         try:
             items = await self.dlc.list(1)
         except Exception:
@@ -543,6 +561,10 @@ class CommandRegistry:
             yield r
 
     async def _rank(self, event, kind: str) -> AsyncGenerator[Any, None]:
+        if not self.vtcm.enabled:
+            async for r in self._yield_vtcm_not_configured(event):
+                yield r
+            return
         if kind == "today":
             rank_list = await self.ranking.today(10)
             title = "- 今日行驶里程排行榜 -"
@@ -1041,6 +1063,13 @@ class CommandRegistry:
             yield event.plain_result(f"查询失败: {exc}")
             return
 
+        if not self.vtcm.enabled:
+            yield event.plain_result(
+                "玩家基础信息已查询完成，但足迹功能依赖 VTCM 公开数据接口。\n"
+                + _VTCM_NOT_CONFIGURED_MSG
+            )
+            return
+
         player_name = info.get("name", "未知")
         last_online_raw = vtcm_stats.get("last_online") or info.get("lastOnline")
         last_online_formatted = format_timestamp_to_readable(last_online_raw) if last_online_raw else "未知"
@@ -1165,6 +1194,9 @@ class CommandRegistry:
 
         try:
             vtc_history = await self.player.fetch_vtc_history(str(tmp_id))
+        except ServiceUnavailableException as exc:
+            yield event.plain_result(str(exc) or _VTCM_NOT_CONFIGURED_MSG)
+            return
         except Exception:
             yield event.plain_result("查询历史车队失败，请稍后重试")
             return

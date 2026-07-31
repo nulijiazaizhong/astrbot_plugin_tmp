@@ -35,6 +35,12 @@
     "title": "API 请求超时秒数",
     "description": "TruckersMP / VTCM / Trucky 接口的统一请求超时时间（秒）。"
   },
+  "vtcm_base_url": {
+    "type": "string",
+    "default": "",
+    "title": "数据源接口地址（自建）",
+    "description": "项目不提供公开数据接口。请自行部署使用 https://github.com/Srlily/TMP-API 或 https://github.com/79887143/evm-data-api ，并把部署后的域名或反代地址填到这里（末尾斜杠可省略）。留空时里程 / DLC / 足迹 / 历史车队 等相关命令会提示“未配置数据源”。"
+  },
   "enable_bind_feature": {
     "type": "bool",
     "default": true,

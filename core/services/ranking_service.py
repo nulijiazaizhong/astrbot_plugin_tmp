@@ -12,7 +12,11 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..api import VtcmClient
-from ..utils.exceptions import ApiResponseException, NetworkException
+from ..utils.exceptions import (
+    ApiResponseException,
+    NetworkException,
+    ServiceUnavailableException,
+)
 
 
 class RankingService:
@@ -30,7 +34,7 @@ class RankingService:
     async def _safe_get(self, kind: str, limit: int) -> List[Dict[str, Any]]:
         try:
             return await self._vtcm.get_mileage_ranking(kind, limit)
-        except (ApiResponseException, NetworkException):
+        except (ApiResponseException, NetworkException, ServiceUnavailableException):
             return []
 
     @staticmethod

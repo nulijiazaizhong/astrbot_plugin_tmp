@@ -8,7 +8,11 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from ..api import VtcmClient
-from ..utils.exceptions import ApiResponseException, NetworkException
+from ..utils.exceptions import (
+    ApiResponseException,
+    NetworkException,
+    ServiceUnavailableException,
+)
 
 
 class DlcService:
@@ -20,7 +24,7 @@ class DlcService:
     async def list(self, dlc_type: int = 1) -> List[Dict[str, Any]]:
         try:
             return await self._vtcm.get_dlc_list(dlc_type)
-        except (ApiResponseException, NetworkException):
+        except (ApiResponseException, NetworkException, ServiceUnavailableException):
             return []
 
 

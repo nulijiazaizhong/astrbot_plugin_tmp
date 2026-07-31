@@ -9,7 +9,11 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from ..api import VtcmClient
-from ..utils.exceptions import ApiResponseException, NetworkException
+from ..utils.exceptions import (
+    ApiResponseException,
+    NetworkException,
+    ServiceUnavailableException,
+)
 from ..utils.constants import PROMODS_SERVER_IDS
 
 
@@ -145,7 +149,7 @@ class FootprintService:
     ) -> List[Dict[str, Any]]:
         try:
             return await self._vtcm.get_player_history(tmp_id, start, end, server_id)
-        except (NetworkException, ApiResponseException):
+        except (NetworkException, ApiResponseException, ServiceUnavailableException):
             return []
 
     @staticmethod

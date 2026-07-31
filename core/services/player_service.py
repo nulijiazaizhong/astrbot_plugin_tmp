@@ -20,6 +20,7 @@ from ..utils.exceptions import (
     ApiResponseException,
     NetworkException,
     PlayerNotFoundException,
+    ServiceUnavailableException,
     SteamIdNotFoundException,
 )
 from .helpers import (
@@ -99,7 +100,7 @@ class PlayerService:
         """获取 VTCM 平台的里程/头像/排名等扩展信息。"""
         try:
             return await self._vtcm.get_player_stats(tmp_id)
-        except (NetworkException, ApiResponseException) as exc:
+        except (NetworkException, ApiResponseException, ServiceUnavailableException) as exc:
             return {"error": str(exc)}
 
     async def fetch_full_profile(self, tmp_id: str) -> Dict[str, Any]:
@@ -158,7 +159,7 @@ class PlayerService:
         try:
             # 复用历史车队接口，返回的 list 中包含玩家在该车队的角色信息
             history = await self._vtcm.get_vtc_history(tmp_id)
-        except (NetworkException, ApiResponseException):
+        except (NetworkException, ApiResponseException, ServiceUnavailableException):
             return None
         if not isinstance(history, list):
             return None
@@ -185,7 +186,7 @@ class PlayerService:
         """按原 main.py 行为返回原始历史车队数据。"""
         try:
             return await self._vtcm.get_vtc_history(tmp_id)
-        except (NetworkException, ApiResponseException) as exc:
+        except (NetworkException, ApiResponseException, ServiceUnavailableException) as exc:
             return None if "私密" in str(exc) else None
 
     # ------------------------------------------------------------------ #

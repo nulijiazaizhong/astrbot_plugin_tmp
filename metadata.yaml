@@ -33,8 +33,11 @@ data_source:
   third_party:
     - name: Trucky App
       url: https://truckyapp.com/
-    - name: da.vtcm.link 公开数据接口（里程/DLC/足迹/历史车队）
-      url: https://da.vtcm.link/
+    - name: 自建 vtcm 公开数据源（里程/DLC/足迹/历史车队）
+      url: https://github.com/Srlily/TMP-API
+    - name: evm-data-api（自建 vtcm 公开数据源）
+      url: https://github.com/79887143/evm-data-api
+  note: VTCM 官方（da.vtcm.link）已不再提供公开数据接口，相关功能需用户自行部署上述开源项目。
 
 # 使用说明（AstrBot 会在 /help 之类的位置展示）
 usage: |

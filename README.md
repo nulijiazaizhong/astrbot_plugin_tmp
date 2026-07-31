@@ -16,6 +16,15 @@
 
 > **注意**：v2 起已**移除**车队平台（VTCM）的成员管理 / 活动 / 加减积分等专属功能。
 > `VtcmClient` 现仅承担里程、DLC、足迹、历史车队、官方服务器、插件版本等公开数据接口。
+>
+> **VTCM 官方已不再提供公开数据接口**（`da.vtcm.link` 不再可用）。里程 / DLC /
+> 足迹 / 历史车队 等功能的数据源需要用户**自行部署**以下任一开源项目：
+>
+> - <https://github.com/Srlily/TMP-API>
+> - <https://github.com/79887143/evm-data-api>
+>
+> 部署完成后，把域名 / 反代地址填到 WebUI 插件配置中的 `vtcm_base_url` 即可启用。
+> 默认留空，相关命令会提示「未配置数据源」并指向部署项目地址。
 
 ## 🧱 目录结构
 
@@ -42,6 +51,8 @@ astrbot_plugin_tmp_bot/
 3. 在 WebUI 插件配置中按需填写：
    - `baidu_translate_app_id` / `baidu_translate_key`：百度翻译凭据。
    - `api_timeout_seconds`：HTTP 超时（秒）。
+   - `vtcm_base_url`：**留空则禁用所有依赖 VTCM 数据源的功能**（总里程排行 / 今日里程排行 / DLC列表 / 足迹 / 历史车队 / 玩家扩展信息）。如需启用，请自行部署 [Srlily/TMP-API](https://github.com/Srlily/TMP-API) 或 [79887143/evm-data-api](https://github.com/79887143/evm-data-api) 后填入其域名或反代地址（末尾斜杠可省略）。服务器列表 / 插件版本等命令不受影响（直接对接 `api.truckersmp.com`）。
+   - `vtcm_open_url`：预留配置项，留空即可。
 
 ## 🧾 命令一览
 
